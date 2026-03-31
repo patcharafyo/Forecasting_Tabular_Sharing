@@ -25,9 +25,9 @@ Three forecasting strategies are provided in this repository, all benchmarked on
 
 | # | Notebook | Strategy | Training Required | Feature Engineering |
 |---|----------|----------|-------------------|---------------------|
-| 1 | `Catboost_Tabular_Direct.ipynb` | 96 independent CatBoost models (direct multi-output) | ✅ Yes | ✅ 70+ features |
-| 2 | `Catboost_Tabular_WalkForward.ipynb` | Single t+1 model applied recursively 96 times | ✅ Yes | ✅ 70+ features |
-| 3 | `TTM_Granite_Zeroshot.ipynb` | IBM TTM Granite R2 — pure zero-shot inference | ❌ None | ❌ None |
+| 1 | `1.TTM_Granite_Zeroshot.ipynb` | IBM TTM Granite R2 — pure zero-shot inference | ❌ None | ❌ None |
+| 2 | `2.Catboost_Tabular_WalkForward.ipynb` | Single t+1 model applied recursively 96 times | ✅ Yes | ✅ 70+ features |
+| 3 | `3.Catboost_Tabular_Direct.ipynb` | 96 independent CatBoost models (direct multi-output) | ✅ Yes | ✅ 70+ features |
 
 ---
 
@@ -35,11 +35,11 @@ Three forecasting strategies are provided in this repository, all benchmarked on
 
 All models evaluated on overlapping 96-hour forecast windows across the 2018 test year:
 
-| Rank | Model | MAE (MW) | RMSE (MW) | Training | Features |
-|------|-------|----------|-----------|----------|----------|
-| 🥇 | **CatBoost Direct** | **1,380.7** | **1,998.6** | 96 models | 70+ |
-| 🥈 | CatBoost Walk-Forward | 1,757.7 | 2,478.3 | 1 model | 70+ |
-| 🥉 | TTM Granite (Zero-Shot) | 2,181.5 | 2,920.5 | 0 (pre-trained) | 0 |
+| Rank | Model (Notebook) | MAE (MW) | RMSE (MW) | Training | Features |
+|------|------------------|----------|-----------|----------|----------|
+| 🥉 | TTM Granite Zero-Shot (Notebook 1) | 2,181.5 | 2,920.5 | 0 (pre-trained) | 0 |
+| 🥈 | CatBoost Walk-Forward (Notebook 2) | 1,757.7 | 2,478.3 | 1 model | 70+ |
+| 🥇 | **CatBoost Direct (Notebook 3)** | **1,380.7** | **1,998.6** | 96 models | 70+ |
 
 **Key lesson**: Carefully engineered tabular features still give gradient boosting a meaningful accuracy advantage over a zero-shot foundation model on domain-specific data — but TTM achieves competitive results *without a single line of training code*.
 
@@ -102,9 +102,9 @@ IBM's Tiny Time Mixer (TTM) is a lightweight transformer pre-trained on a large 
 ## Project Structure
 
 ```
-├── Catboost_Tabular_Direct.ipynb         # Notebook 1: Direct multi-output (96 CatBoost models)
-├── Catboost_Tabular_WalkForward.ipynb    # Notebook 2: Recursive walk-forward (1 CatBoost model)
-├── TTM_Granite_Zeroshot.ipynb            # Notebook 3: Zero-shot foundation model (IBM TTM Granite R2)
+├── 1.TTM_Granite_Zeroshot.ipynb            # Notebook 1: Zero-shot foundation model (IBM TTM Granite R2)
+├── 2.Catboost_Tabular_WalkForward.ipynb    # Notebook 2: Recursive walk-forward (1 CatBoost model)
+├── 3.Catboost_Tabular_Direct.ipynb         # Notebook 3: Direct multi-output (96 CatBoost models)
 ├── Data/
 │   ├── energy_data.csv                   # Spanish electricity grid data, hourly 2015–2018
 │   └── weather_data.csv                  # Hourly weather observations (temperature, wind, etc.)
@@ -119,7 +119,7 @@ IBM's Tiny Time Mixer (TTM) is a lightweight transformer pre-trained on a large 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/Forecasting_Tabular_Sharing.git
+git clone https://github.com/patcharafyo/Forecasting_Tabular_Sharing.git
 cd Forecasting_Tabular_Sharing
 ```
 
@@ -135,11 +135,11 @@ pip install -r requirements.txt
 
 ### 3. Recommended notebook order
 
-Start with Notebook 1 to learn the feature engineering foundation, then compare with Notebook 2 to see the walk-forward trade-offs, and finally Notebook 3 to experience how a foundation model operates without any of that manual work.
+Start with Notebook 1 to see how a foundation model can forecast with zero feature engineering, then move to Notebook 2 to learn the walk-forward recursive strategy with hand-crafted features, and finally Notebook 3 to see how the direct multi-horizon approach achieves the best accuracy.
 
 ```
 Notebook 1  →  Notebook 2  →  Notebook 3
-(Direct)       (Walk-Forward)   (Zero-Shot TTM)
+(Zero-Shot TTM)  (Walk-Forward)   (Direct)
 ```
 
 ---
@@ -176,7 +176,7 @@ After running the notebooks, consider:
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.10+
 - CatBoost, pandas, numpy, matplotlib, scikit-learn
-- `tsfm_public` + PyTorch (for TTM Granite notebook only)
+- `granite-tsfm[notebooks]` + PyTorch (for TTM Granite notebook only)
 - See `requirements.txt` for full dependency list
