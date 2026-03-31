@@ -1,0 +1,22 @@
+# ── Core data & ML ────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.23.0
+matplotlib>=3.6.0
+scikit-learn>=1.5.0,<1.6.0   # must be < 1.6 for granite-tsfm compatibility
+catboost>=1.2.0
+tqdm>=4.64.0
+pytz>=2022.7
+
+# ── Jupyter environment ────────────────────────────────────────
+ipywidgets>=8.0.0
+jupyter>=1.0.0
+jupyterlab>=4.0.0
+
+# ── IBM Granite TTM foundation model ──────────────────────────
+# PyPI package is 'granite-tsfm'; it exposes 'tsfm_public' at import time.
+# Requires Python >= 3.10.
+granite-tsfm[notebooks]>=0.3.5
+
+# ── Deep-learning backend (installed automatically by granite-tsfm) ───
+torch>=2.0.0
+transformers>=4.40.0
