@@ -13,7 +13,8 @@ By working through these notebooks you will be able to:
 3. **Contrast** two multi-step forecasting strategies — *direct multi-output* vs. *recursive walk-forward* — and understand their trade-offs
 4. **Apply** gradient boosting (CatBoost) to a structured forecasting task with proper chronological train/test splits
 5. **Use** a pre-trained foundation model (IBM TTM Granite) for zero-shot time-series forecasting without any training
-6. **Evaluate** and **compare** models with horizon-aware metrics (MAE, RMSE per forecast step)
+6. **Fine-tune** the TTM prediction head to adapt a foundation model to domain-specific electricity load patterns
+7. **Evaluate** and **compare** models with horizon-aware metrics (MAE, RMSE per forecast step)
 
 ---
 
@@ -21,13 +22,14 @@ By working through these notebooks you will be able to:
 
 This project compares **traditional ML (CatBoost)** against a **foundation model (IBM TTM Granite)** for predicting Spain's total electricity load **96 hours (4 days) ahead**, using 4 years of historical grid and weather data (2015–2018).
 
-Three forecasting strategies are provided in this repository, all benchmarked on the same test set (2018) for a fair comparison:
+Four forecasting strategies are provided in this repository, all benchmarked on the same test set (2018) for a fair comparison:
 
 | # | Notebook | Strategy | Training Required | Feature Engineering |
 |---|----------|----------|-------------------|---------------------|
 | 1 | `1.TTM_Granite_Zeroshot.ipynb` | IBM TTM Granite R2 — pure zero-shot inference | ❌ None | ❌ None |
 | 2 | `2.Catboost_Tabular_WalkForward.ipynb` | Single t+1 model applied recursively 96 times | ✅ Yes | ✅ 70+ features |
 | 3 | `3.Catboost_Tabular_Direct.ipynb` | 96 independent CatBoost models (direct multi-output) | ✅ Yes | ✅ 70+ features |
+| 4 | `4.TTM_Granite_Finetuned.ipynb` | IBM TTM Granite R2 — fine-tuned prediction head | ✅ Head only | ❌ None |
 
 ---
 
@@ -37,13 +39,14 @@ All models evaluated on overlapping 96-hour forecast windows across the 2018 tes
 
 | Rank | Model (Notebook) | MAE (MW) | RMSE (MW) | Training | Features |
 |------|------------------|----------|-----------|----------|----------|
-| 🥉 | TTM Granite Zero-Shot (Notebook 1) | 2,181.5 | 2,920.5 | 0 (pre-trained) | 0 |
-| 🥈 | CatBoost Walk-Forward (Notebook 2) | 1,757.7 | 2,478.3 | 1 model | 70+ |
-| 🥇 | **CatBoost Direct (Notebook 3)** | **1,380.7** | **1,998.6** | 96 models | 70+ |
+| 4 | TTM Granite Zero-Shot (Notebook 1) | 2,181.5 | 2,920.5 | 0 (pre-trained) | 0 |
+| 3 | CatBoost Walk-Forward (Notebook 2) | 1,757.7 | 2,478.3 | 1 model | 70+ |
+| 2 | TTM Granite Fine-Tuned (Notebook 4) | 1,506.4 | — | prediction head only | 0 |
+| 1 | **CatBoost Direct (Notebook 3)** | **1,380.7** | **1,998.6** | 96 models | 70+ |
 
-**Key lesson**: Carefully engineered tabular features still give gradient boosting a meaningful accuracy advantage over a zero-shot foundation model on domain-specific data — but TTM achieves competitive results *without a single line of training code*.
+**Key lesson**: Carefully engineered tabular features still give CatBoost Direct the best accuracy, but fine-tuning TTM narrows the gap substantially: the fine-tuned foundation model improves from **2,181.5 MW MAE** in zero-shot mode to **1,506.4 MW MAE** without any manual feature engineering.
 
-> **Note on TTM:** Uses `ibm-granite/granite-timeseries-ttm-r2` (branch `1536-96-r2`) configured for 1,536-hour context (~64 days) and 96-step output.
+> **Note on TTM:** Both TTM notebooks use `ibm-granite/granite-timeseries-ttm-r2` (branch `1536-96-r2`) configured for 1,536-hour context (~64 days) and 96-step output. RMSE for the fine-tuned run is left blank unless it is reported from the updated Notebook 4 run.
 
 ---
 
@@ -86,6 +89,19 @@ IBM's Tiny Time Mixer (TTM) is a lightweight transformer pre-trained on a large 
 - **No retraining**: zero-shot inference — load the weights, pass context, get forecast
 - **Long context window**: 1,536 continuous hours (~64 days) as input vs. discrete lag offsets in the tabular approach
 
+### Concept 4 — Fine-Tuning TTM's Prediction Head
+
+Fine-tuning sits between the two extremes above. Instead of training a forecasting model from scratch or using TTM exactly as-is, Notebook 4 starts from the pre-trained TTM backbone and adapts only the prediction head to the electricity-load dataset.
+
+The **backbone** is the part of the model that has already learned general time-series patterns during pre-training: seasonality, trend changes, repeated cycles, and relationships across recent context. Freezing it keeps those broad temporal representations stable. The **prediction head** is the final forecasting layer that maps those learned representations into the specific 96-hour load forecast required here.
+
+This is useful because it keeps the workflow lightweight:
+
+- **Less training than a full deep model**: most parameters stay frozen, so the model only learns the task-specific output mapping
+- **No manual feature engineering**: the model still consumes raw historical values rather than 70+ hand-crafted calendar, lag, and rolling features
+- **Better domain adaptation than zero-shot**: the head learns Spain-specific electricity load behavior, improving MAE from 2,181.5 MW to 1,506.4 MW
+- **A practical middle ground**: it does not beat the strongest CatBoost Direct model here, but it closes much of the gap while preserving the foundation-model workflow
+
 ---
 
 ## Prerequisites
@@ -105,6 +121,7 @@ IBM's Tiny Time Mixer (TTM) is a lightweight transformer pre-trained on a large 
 ├── 1.TTM_Granite_Zeroshot.ipynb            # Notebook 1: Zero-shot foundation model (IBM TTM Granite R2)
 ├── 2.Catboost_Tabular_WalkForward.ipynb    # Notebook 2: Recursive walk-forward (1 CatBoost model)
 ├── 3.Catboost_Tabular_Direct.ipynb         # Notebook 3: Direct multi-output (96 CatBoost models)
+├── 4.TTM_Granite_Finetuned.ipynb           # Notebook 4: Fine-tuned TTM prediction head
 ├── Data/
 │   ├── energy_data.csv                   # Spanish electricity grid data, hourly 2015–2018
 │   └── weather_data.csv                  # Hourly weather observations (temperature, wind, etc.)
@@ -135,11 +152,11 @@ pip install -r requirements.txt
 
 ### 3. Recommended notebook order
 
-Start with Notebook 1 to see how a foundation model can forecast with zero feature engineering, then move to Notebook 2 to learn the walk-forward recursive strategy with hand-crafted features, and finally Notebook 3 to see how the direct multi-horizon approach achieves the best accuracy.
+Start with Notebook 1 to see how a foundation model can forecast with zero feature engineering, then move to Notebook 2 to learn the walk-forward recursive strategy with hand-crafted features, Notebook 3 to see how the direct multi-horizon approach achieves the best accuracy, and Notebook 4 to understand how fine-tuning adapts TTM to the target domain.
 
 ```
-Notebook 1  →  Notebook 2  →  Notebook 3
-(Zero-Shot TTM)  (Walk-Forward)   (Direct)
+Notebook 1  →  Notebook 2  →  Notebook 3  →  Notebook 4
+(Zero-Shot TTM)  (Walk-Forward)   (Direct)     (Fine-Tuned TTM)
 ```
 
 ---
@@ -163,6 +180,7 @@ After running the notebooks, consider:
 3. TTM achieves reasonable accuracy with **zero feature engineering and zero training**. What does this imply for future forecasting workflows?
 4. What would happen to CatBoost performance if you removed all lag features? Try it!
 5. The test set starts in 2018. Why is a *time-based* split essential here, and what goes wrong with a random split?
+6. Fine-tuned TTM improves substantially over zero-shot TTM. What does this suggest about adapting foundation models with small task-specific training steps?
 
 ## Key Takeaways
 
@@ -172,11 +190,11 @@ After running the notebooks, consider:
 
 3. **Zero-shot foundation models are viable baselines.** TTM Granite requires zero effort (no features, no training) and still produces reasonable forecasts — useful for quick prototyping or when domain expertise is limited.
 
-4. **Fine-tuning the prediction head bridges the gap.** By freezing the backbone and training only the prediction head, we combine pre-trained temporal knowledge with domain-specific adaptation — all with zero feature engineering.
+4. **Fine-tuning the prediction head bridges the gap.** By freezing the backbone and training only the prediction head, TTM improves to **1,506.4 MW MAE**, combining pre-trained temporal knowledge with domain-specific adaptation — all with zero feature engineering.
 
 ## Requirements
 
 - Python 3.10+
 - CatBoost, pandas, numpy, matplotlib, scikit-learn
-- `granite-tsfm[notebooks]` + PyTorch (for TTM Granite notebook only)
+- `granite-tsfm[notebooks]` + PyTorch (for TTM Granite notebooks only)
 - See `requirements.txt` for full dependency list
