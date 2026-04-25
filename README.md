@@ -41,12 +41,12 @@ All models evaluated on overlapping 96-hour forecast windows across the 2018 tes
 |------|------------------|----------|-----------|----------|----------|
 | 4 | TTM Granite Zero-Shot (Notebook 1) | 2,181.5 | 2,920.5 | 0 (pre-trained) | 0 |
 | 3 | CatBoost Walk-Forward (Notebook 2) | 1,757.7 | 2,478.3 | 1 model | 70+ |
-| 2 | TTM Granite Fine-Tuned (Notebook 4) | 1,506.4 | — | prediction head only | 0 |
+| 2 | TTM Granite Fine-Tuned (Notebook 4) | 1,506.4 | 2,214.8 | prediction head only | 0 |
 | 1 | **CatBoost Direct (Notebook 3)** | **1,380.7** | **1,998.6** | 96 models | 70+ |
 
 **Key lesson**: Carefully engineered tabular features still give CatBoost Direct the best accuracy, but fine-tuning TTM narrows the gap substantially: the fine-tuned foundation model improves from **2,181.5 MW MAE** in zero-shot mode to **1,506.4 MW MAE** without any manual feature engineering.
 
-> **Note on TTM:** Both TTM notebooks use `ibm-granite/granite-timeseries-ttm-r2` (branch `1536-96-r2`) configured for 1,536-hour context (~64 days) and 96-step output. RMSE for the fine-tuned run is left blank unless it is reported from the updated Notebook 4 run.
+> **Note on TTM:** Both TTM notebooks use `ibm-granite/granite-timeseries-ttm-r2` (branch `1536-96-r2`) configured for 1,536-hour context (~64 days) and 96-step output.
 
 ---
 
